@@ -16,9 +16,11 @@ external_api_url = config.get('EXTERNAL_API_URL', 'https://default-url.example.c
 conversation_histories = {}
 
 def get_conversation_history(session_id):
+    """Retrieve the conversation history for a given session ID."""
     return conversation_histories.get(session_id, [])
 
 def update_conversation_history(session_id, role, content):
+    """Update the conversation history for a given session ID."""
     if session_id not in conversation_histories:
         conversation_histories[session_id] = []
     conversation_histories[session_id].append({"role": role, "content": content})
@@ -26,15 +28,15 @@ def update_conversation_history(session_id, role, content):
 @app.route('/api/chat', methods=['POST'])
 def chat():
     # Get the data from the request and ensure it's parsed as JSON
-    data = request.get_json()  # Use get_json() to ensure parsing
+    data = request.get_json()
     model = data.get('model')
     prompt = data.get('prompt')
-    session_id = data.get('session_id', str(uuid4()))  # Use existing or new session ID
+    session_id = data.get('session_id', str(uuid4()))  # Use existing session ID from Alexa or generate a new one
 
     if not model or not prompt:
         return jsonify({"error": "Model and prompt are required"}), 400
 
-    # Retrieve the conversation history
+    # Retrieve the conversation history based on the session ID
     conversation_history = get_conversation_history(session_id)
 
     # Update the conversation history with the new user input
