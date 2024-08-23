@@ -12,18 +12,8 @@ with open('config.json') as config_file:
 
 external_api_url = config.get('EXTERNAL_API_URL', 'https://default-url.example.com/api/chat')
 
-# In-memory storage for conversation histories
-conversation_histories = {}
-
-def get_conversation_history(session_id):
-    """Retrieve the conversation history for a given session ID."""
-    return conversation_histories.get(session_id, [])
-
-def update_conversation_history(session_id, role, content):
-    """Update the conversation history for a given session ID."""
-    if session_id not in conversation_histories:
-        conversation_histories[session_id] = []
-    conversation_histories[session_id].append({"role": role, "content": content})
+# Flag to control debug logging
+debug_logging = config.get('DEBUG_LOGGING', False)
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
@@ -31,22 +21,21 @@ def chat():
     data = request.get_json()
     model = data.get('model')
     prompt = data.get('prompt')
-    session_id = data.get('session_id', str(uuid4()))  # Use existing session ID from Alexa or generate a new one
+    session_id = data.get('session_id', str(uuid4()))  # Use existing session ID or generate a new one
 
     if not model or not prompt:
         return jsonify({"error": "Model and prompt are required"}), 400
 
-    # Retrieve the conversation history based on the session ID
-    conversation_history = get_conversation_history(session_id)
-
-    # Update the conversation history with the new user input
-    update_conversation_history(session_id, "user", prompt)
-
     # Prepare the payload for the external API request
     payload = {
         "model": model,
-        "messages": conversation_history + [{"role": "user", "content": prompt}]
+        "messages": [{"role": "user", "content": prompt}],
+        "session_id": session_id  # Pass the session_id to the external API
     }
+
+    # Debug: Log the data being sent if debug_logging is enabled
+    if debug_logging:
+        print(f"DEBUG: Sending to external API: {json.dumps(payload, indent=2)}")
 
     # Send the POST request to the external API
     try:
@@ -64,8 +53,9 @@ def chat():
                 content = line_data['message']['content']
                 full_response += content
 
-        # Update the conversation history with the API's response
-        update_conversation_history(session_id, "assistant", full_response)
+        # Debug: Log the received data if debug_logging is enabled
+        if debug_logging:
+            print(f"DEBUG: Received from external API: {full_response}")
 
     except requests.exceptions.RequestException as e:
         return jsonify({"error": str(e)}), 500

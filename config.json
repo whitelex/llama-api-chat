@@ -1,3 +1,4 @@
 {
-    "EXTERNAL_API_URL": "https://ollama.martina-home.online/api/chat"
+    "EXTERNAL_API_URL": "https://ollama.martina-home.online/api/chat",
+    "DEBUG_LOGGING": true
 }
