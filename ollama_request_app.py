@@ -38,12 +38,14 @@ def chat():
     conversation_history = get_conversation_history(session_id)
 
     # Update the conversation history with the new user input
-    update_conversation_history(session_id, "user", prompt)
+    # Here, prompt is expected to be a list of message dictionaries
+    for message in prompt:
+        update_conversation_history(session_id, message['role'], message['content'])
 
     # Prepare the payload for the external API request
     payload = {
         "model": model,
-        "messages": conversation_history + [{"role": "user", "content": prompt}]
+        "messages": conversation_history
     }
 
     # Send the POST request to the external API
